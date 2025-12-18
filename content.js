@@ -3,7 +3,7 @@ let selectionDiv = null;
 let overlay = null;
 let fullScreenshotImage = null;
 
-const API_KEY = "AIzaSyCU1gZVbUgouZCytYF6DQJngoVcaXVT-5U"; 
+const API_KEY = "API_KEY_HERE"; 
 
 // Lắng nghe lệnh từ background
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -148,10 +148,17 @@ async function callGemini(base64Image) {
     const payload = {
       contents: [{
         parts: [
-          { text: "Solve. Return ONLY the letter (A, B, C, or D)." },
+          // PROMPT ĐÃ ĐƯỢC SIẾT CHẶT ĐỂ CHỈ TRẢ VỀ 1 KÝ TỰ
+          { text: "Read the question and options. Output ONLY the single letter of the correct answer (A, B, C, or D). No words, no analysis, no punctuation." },
           { inline_data: { mime_type: "image/jpeg", data: rawBase64 } }
         ]
-      }]
+      }],
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+      ]
     };
 
     const response = await fetch(url, {
@@ -161,10 +168,24 @@ async function callGemini(base64Image) {
     });
 
     const data = await response.json();
+
+    // Kiểm tra nếu có lỗi API
+    if (data.error) return ""; 
+
+    // Kiểm tra nếu bị chặn do nội dung
+    if (data.candidates?.[0]?.finishReason === "SAFETY") return "";
+
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return text ? text.trim() : "?";
+    
+    if (text) {
+      // Làm sạch kết quả: lấy chữ cái đầu tiên tìm thấy để tránh AI lỡ tay viết thêm dấu chấm hoặc khoảng trắng
+      const match = text.trim().match(/[A-D]/i);
+      return match ? match[0].toUpperCase() : "";
+    }
+    
+    return "";
+
   } catch (err) {
     return ""; 
   }
 }
-
