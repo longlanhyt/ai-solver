@@ -189,3 +189,5 @@ async function callGemini(base64Image) {
     return ""; 
   }
 }
+
+//@A@I@zaS@yBH@B-MOqthp@GQLRQcFyr1PCk@DxCSvKxbx0
